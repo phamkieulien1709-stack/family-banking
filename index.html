@@ -14,6 +14,22 @@
 </head>
 <body>
 <div id="root"></div>
+<script>
+  // Hàng đợi tạm: đảm bảo window.storage tồn tại NGAY LẬP TỨC (không cần chờ Firebase load xong)
+  // để đoạn code React bên dưới gọi vào không bị lỗi "storage is undefined".
+  window._storageReadyResolve = null;
+  window._storageReady = new Promise(function (resolve) { window._storageReadyResolve = resolve; });
+  window.storage = {
+    get: async function (key, shared) {
+      const impl = await window._storageReady;
+      return impl.get(key, shared);
+    },
+    set: async function (key, value, shared) {
+      const impl = await window._storageReady;
+      return impl.set(key, value, shared);
+    }
+  };
+</script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import { getAuth, signInAnonymously, onAuthStateChanged }
@@ -57,7 +73,7 @@
     return doc(db, "families", FAMILY_CODE);
   }
 
-  window.storage = {
+  const storageImpl = {
     get: async function (key, shared) {
       await ensureAuth();
       const snap = await getDoc(famDoc());
@@ -77,6 +93,7 @@
       return { key: key, value: value, shared: !!shared };
     }
   };
+  window._storageReadyResolve(storageImpl);
 
   // Lắng nghe thay đổi từ các thiết bị khác trong gia đình -> tự tải lại để cập nhật dữ liệu mới nhất
   ensureAuth().then(() => {
