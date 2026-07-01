@@ -53,7 +53,11 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const deviceId = Math.random().toString(36).slice(2);
+  let deviceId = localStorage.getItem('_fb_device_id');
+  if (!deviceId) {
+    deviceId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('_fb_device_id', deviceId);
+  }
   let lastWriteVersion = null;
   let authReady = null;
 
@@ -97,7 +101,9 @@
 
   // Lắng nghe thay đổi từ các thiết bị khác trong gia đình -> tự tải lại để cập nhật dữ liệu mới nhất
   ensureAuth().then(() => {
+    let isFirstSnapshot = true;
     onSnapshot(famDoc(), (snap) => {
+      if (isFirstSnapshot) { isFirstSnapshot = false; return; }
       if (!snap.exists()) return;
       const d = snap.data();
       if (d.updatedBy === deviceId) return;
