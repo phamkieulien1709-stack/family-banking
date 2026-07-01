@@ -90,6 +90,10 @@
       const ref = famDoc();
       const snap = await getDoc(ref);
       const values = snap.exists() ? (snap.data().values || {}) : {};
+      // Nếu dữ liệu không thay đổi so với hiện tại, bỏ qua -> tránh kích hoạt đồng bộ không cần thiết
+      if (values[key] === value) {
+        return { key: key, value: value, shared: !!shared };
+      }
       values[key] = value;
       const version = Date.now() + '-' + deviceId;
       lastWriteVersion = version;
